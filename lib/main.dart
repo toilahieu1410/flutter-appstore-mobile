@@ -1,40 +1,53 @@
+import 'package:app_store/provider/user_provider.dart';
 import 'package:app_store/views/screens/authentication_screens/login_screen.dart';
 import 'package:app_store/views/screens/main_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(const MyApp());
+  // chạy ứng dụng Flutter đc bao bọc trong 1 ProviderScope để quản lý state
+  runApp(ProviderScope(child: const MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+// Root widget của ứng dụng, 1 consumerWidget state thay đổi
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
+  // Phương thức kiểm tra token và thiết lập ng dùng nếu có sẵn
+  Future<void> _checkTokenAndSetUser(WidgetRef ref) async {
+    // obtain 1 instance của sharedPreference để lưu trữ dữ liệu cục bộ
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    // Trích xuất authentication token và user dữ liệu được lưu trữ cục bộ
+    String? token = preferences.getString('auth_token');
+    String? userJson = preferences.getString('user');
+
+    // Nếu cả token và dữ liệu ng dùng có sẵn, ta cập nhật trạng tháng người dùng
+    if(token != null && userJson != null) {
+      ref.read(userProvider.notifier).setUser(userJson);
+    } else {
+      ref.read(userProvider.notifier).signOut();
+    }
+  }
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       debugShowCheckedModeBanner: false, // bỏ chữ debug ở trên màn hình
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: MainScreen()
+      home: FutureBuilder(future: _checkTokenAndSetUser(ref), builder: (context, snapshot) {
+        if(snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(),);
+        }
+        final user = ref.watch(userProvider);
+
+        return user !=null ? MainScreen() : LoginScreen();
+      },)
     );
   }
 }

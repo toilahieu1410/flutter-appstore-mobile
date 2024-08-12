@@ -75,7 +75,7 @@ class HeaderWidget extends StatelessWidget {
                 child: Ink(
                   width: 30,
                   height: 30,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     image: DecorationImage(image: AssetImage('assets/icons/message.png'),
                     ),
                   ),
@@ -83,7 +83,8 @@ class HeaderWidget extends StatelessWidget {
               ),
             )
           ),
-    ],),
+      ],
+    ),
   );
  }
 }
